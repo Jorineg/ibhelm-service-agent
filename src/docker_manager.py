@@ -144,7 +144,8 @@ def get_service_status(service_name: str) -> ServiceStatus:
     else:
         # Single container service
         container_suffix = config.get("container_suffix", "app-1")
-        dir_name = config["dir"].replace("/", "-")
+        # Docker Compose lowercases project names
+        dir_name = config["dir"].replace("/", "-").lower()
         container_name = f"{dir_name}-{container_suffix}"
         
         try:
@@ -279,9 +280,9 @@ def get_container_logs(service_name: str, lines: int = 100, container_name: str 
         # For multi-container, return logs from all (or require specific container)
         return "Multi-container service. Specify container_name parameter."
     else:
-        # Single container
+        # Single container - Docker Compose lowercases project names
         container_suffix = config.get("container_suffix", "app-1")
-        dir_name = config["dir"].replace("/", "-")
+        dir_name = config["dir"].replace("/", "-").lower()
         target_name = f"{dir_name}-{container_suffix}"
     
     try:
