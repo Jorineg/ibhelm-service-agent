@@ -1,0 +1,14 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8100:8100"
+    env_file:
+      - .env
+    volumes:
+      # Mount Docker socket to control other containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount services directory to run docker-compose and git
+      - ${SERVICES_BASE_PATH:-/opt/ibhelm}:/opt/ibhelm:ro
+    restart: unless-stopped
+
