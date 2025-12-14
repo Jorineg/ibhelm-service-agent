@@ -142,11 +142,10 @@ def get_service_status(service_name: str) -> ServiceStatus:
             total_memory_mb=round(total_memory, 1) if total_memory else None,
         )
     else:
-        # Single container service
-        container_suffix = config.get("container_suffix", "app-1")
-        # Docker Compose lowercases project names
-        dir_name = config["dir"].replace("/", "-").lower()
-        container_name = f"{dir_name}-{container_suffix}"
+        # Single container service - use explicit container_name from settings
+        container_name = config.get("container_name")
+        if not container_name:
+            return ServiceStatus(name=service_name, status="error", error="No container_name configured")
         
         try:
             container = client.containers.get(container_name)
@@ -280,10 +279,10 @@ def get_container_logs(service_name: str, lines: int = 100, container_name: str 
         # For multi-container, return logs from all (or require specific container)
         return "Multi-container service. Specify container_name parameter."
     else:
-        # Single container - Docker Compose lowercases project names
-        container_suffix = config.get("container_suffix", "app-1")
-        dir_name = config["dir"].replace("/", "-").lower()
-        target_name = f"{dir_name}-{container_suffix}"
+        # Single container - use explicit container_name from settings
+        target_name = config.get("container_name")
+        if not target_name:
+            return "No container_name configured for this service"
     
     try:
         container = client.containers.get(target_name)

@@ -27,28 +27,28 @@ SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 SERVICES_BASE_PATH = os.getenv("SERVICES_BASE_PATH", "/root")
 
 # Service definitions
-# name -> (directory_name, compose_file_path, has_multiple_containers)
-# compose_file_path is relative to SERVICES_BASE_PATH/directory_name
+# container_name: exact container name as shown by `docker ps`
+# For multi_container services, we find by compose project label instead
 SERVICES = {
     "teamworkmissiveconnector": {
         "dir": "TeamworkMissiveConnector",
         "compose": "docker-compose.yml",
-        "container_suffix": "app-1",
+        "container_name": "teamwork-missive-connector",
     },
     "thumbnailtextextractor": {
         "dir": "ThumbnailTextExtractor",
         "compose": "docker-compose.yml",
-        "container_suffix": "app-1",
+        "container_name": "thumbnail-text-extractor",
     },
     "mcp": {
         "dir": "ibhelm-mcp",
         "compose": "docker-compose.yml",
-        "container_suffix": "app-1",
+        "container_name": "ibhelm-mcp-server",
     },
     "supabase": {
         "dir": "supabase/docker",
-        "compose": ["docker-compose.yml", "docker-compose.s3.yml"],  # Both required
-        "container_suffix": None,
+        "compose": ["docker-compose.yml", "docker-compose.s3.yml"],
+        "container_name": None,  # Multi-container, found by project label
         "multi_container": True,
     },
 }
