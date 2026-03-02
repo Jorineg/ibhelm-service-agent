@@ -2,7 +2,7 @@
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -178,20 +178,6 @@ async def update_service(name: str, user: dict = Depends(require_admin)):
 
 
 # =============================================================================
-# Configuration (for containers to fetch on startup)
-# =============================================================================
-
-@app.get("/config/{service_name}")
-async def get_config_for_service(service_name: str):
-    """
-    Get configuration for a service.
-    Called by containers on startup via entrypoint.sh.
-    No auth required (internal network only).
-    """
-    return await config.get_config_for_service(service_name)
-
-
-# =============================================================================
 # Configuration Management (Admin only)
 # =============================================================================
 
@@ -329,6 +315,39 @@ async def delete_config(key: str, user: dict = Depends(require_admin)):
 async def list_categories(user: dict = Depends(require_admin)):
     """List available config categories."""
     return {"categories": settings.CONFIG_CATEGORIES}
+
+
+# =============================================================================
+# Internal: Container config fetch (no auth - internal network only)
+# =============================================================================
+
+def is_internal_request(request: Request) -> bool:
+    """Check if request comes from internal Docker network or localhost."""
+    client_ip = request.client.host if request.client else None
+    if not client_ip:
+        return False
+    # Allow localhost and Docker networks (172.x.x.x, 10.x.x.x, 192.168.x.x)
+    return (
+        client_ip.startswith("127.") or
+        client_ip.startswith("172.") or
+        client_ip.startswith("10.") or
+        client_ip.startswith("192.168.") or
+        client_ip == "::1"
+    )
+
+
+@app.get("/internal/config/{service_name}")
+async def get_config_for_service(service_name: str, request: Request):
+    """
+    Get configuration for a service.
+    Called by containers on startup via entrypoint.sh.
+    Only accessible from internal Docker network.
+    """
+    if not is_internal_request(request):
+        logger.warning("Blocked external config request from %s", request.client.host)
+        raise HTTPException(403, "Internal endpoint only")
+    
+    return await config.get_config_for_service(service_name)
 
 
 # =============================================================================
